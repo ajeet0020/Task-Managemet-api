@@ -350,3 +350,4 @@ Go to **Environment** tab in your Web Service and add:
 ### 4. Verify Production Deployment
 - Once the build finishes, open `https://your-service-name.onrender.com/`.
 - You will see the root health check JSON confirming the system is running live on PostgreSQL and WhiteNoise is serving static assets!
+

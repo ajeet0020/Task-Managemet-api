@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Management API - Web Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-indigo-600 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-list-check text-2xl"></i>
+        <span class="font-bold text-xl tracking-tight">Task Management API</span>
+        <span class="bg-indigo-800 text-xs px-2 py-1 rounded text-indigo-200">v1.0.0</span>
+      </div>
+      <div id="authNav" class="flex items-center space-x-3">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Auth Box (When Logged Out) -->
+    <div id="authSection" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg border border-slate-100">
+      <div class="text-center mb-6">
+        <h2 id="authTitle" class="text-2xl font-bold text-slate-800">Login to Dashboard</h2>
+        <p class="text-slate-500 text-sm mt-1">Access your projects and tasks via REST API</p>
+      </div>
+
+      <div id="alertBox" class="hidden mb-4 p-3 rounded text-sm"></div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Username</label>
+            <input type="text" id="authUsername" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="e.g. ajeet">
+          </div>
+          
+          <div id="emailField" class="hidden">
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Email Address</label>
+            <input type="email" id="authEmail" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="e.g. ajeet@gmail.com">
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Password</label>
+            <input type="password" id="authPassword" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="••••••••">
+          </div>
+
+          <div id="password2Field" class="hidden">
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Confirm Password</label>
+            <input type="password" id="authPassword2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="••••••••">
+          </div>
+
+          <button type="submit" id="authSubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition duration-150">
+            Login
+          </button>
+        </div>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-slate-500">
+        <span id="authToggleText">Don't have an account?</span>
+        <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-indigo-600 font-semibold hover:underline ml-1">
+          Register here
+        </button>
+      </div>
+    </div>
+
+    <!-- App Dashboard (When Logged In) -->
+    <div id="dashboardSection" class="hidden space-y-8">
+
+      <!-- Projects Section -->
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">Your Projects</h2>
+            <p class="text-sm text-slate-500">Organize tasks under projects</p>
+          </div>
+          <button onclick="openModal('projectModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>New Project</span>
+          </button>
+        </div>
+
+        <div id="projectsList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- Tasks Section -->
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">Tasks</h2>
+            <p class="text-sm text-slate-500">Filter, search, and manage project items</p>
+          </div>
+          <button onclick="openModal('taskModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>New Task</span>
+          </button>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+            <select id="filterStatus" onchange="loadTasks()" class="w-full px-3 py-2 border rounded-md text-sm bg-white">
+              <option value="">All Statuses</option>
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Priority</label>
+            <select id="filterPriority" onchange="loadTasks()" class="w-full px-3 py-2 border rounded-md text-sm bg-white">
+              <option value="">All Priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Project</label>
+            <select id="filterProject" onchange="loadTasks()" class="w-full px-3 py-2 border rounded-md text-sm bg-white">
+              <option value="">All Projects</option>
+              <!-- Filled dynamically -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Search</label>
+            <input type="text" id="filterSearch" oninput="debounceLoadTasks()" placeholder="Title or description..." class="w-full px-3 py-2 border rounded-md text-sm bg-white outline-none">
+          </div>
+        </div>
+
+        <!-- Tasks Table / Cards -->
+        <div id="tasksList" class="space-y-3">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Project Modal -->
+  <div id="projectModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg">Create New Project</h3>
+        <button onclick="closeModal('projectModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form onsubmit="handleCreateProject(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-700">Project Name</label>
+          <input type="text" id="newProjectName" required class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Mobile App Backend">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-700">Description</label>
+          <textarea id="newProjectDesc" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Goals, objectives..."></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeModal('projectModal')" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div id="taskModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg">Create New Task</h3>
+        <button onclick="closeModal('taskModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form onsubmit="handleCreateTask(event)" class="space-y-3">
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-700">Task Title</label>
+          <input type="text" id="newTaskTitle" required class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Integrate Redis Cache">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-700">Project</label>
+          <select id="newTaskProject" required class="w-full px-3 py-2 border rounded-lg text-sm">
+            <!-- Dynamic projects -->
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Status</label>
+            <select id="newTaskStatus" class="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-slate-700">Priority</label>
+            <select id="newTaskPriority" class="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-slate-700">Description</label>
+          <textarea id="newTaskDesc" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Details..."></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeModal('taskModal')" class="px-4 py-2 border rounded-lg text-sm">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let isRegisterMode = false;
+    let projectsCache = [];
+    let debounceTimer;
+
+    function showAlert(msg, isError = false) {
+      const box = document.getElementById('alertBox');
+      box.className = `mb-4 p-3 rounded text-sm ${isError ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`;
+      box.textContent = msg;
+      box.classList.remove('hidden');
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('authTitle').textContent = isRegisterMode ? 'Register New Account' : 'Login to Dashboard';
+      document.getElementById('emailField').classList.toggle('hidden', !isRegisterMode);
+      document.getElementById('password2Field').classList.toggle('hidden', !isRegisterMode);
+      document.getElementById('authSubmitBtn').textContent = isRegisterMode ? 'Register' : 'Login';
+      document.getElementById('authToggleText').textContent = isRegisterMode ? 'Already have an account?' : "Don't have an account?";
+      document.getElementById('authToggleBtn').textContent = isRegisterMode ? 'Login here' : 'Register here';
+      document.getElementById('alertBox').classList.add('hidden');
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('authUsername').value.trim();
+      const password = document.getElementById('authPassword').value;
+
+      if (isRegisterMode) {
+        const email = document.getElementById('authEmail').value.trim();
+        const password2 = document.getElementById('authPassword2').value;
+        try {
+          const res = await fetch('/api/register/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, password2 })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showAlert('Registration successful! Logging you in...', false);
+            // Automatic login
+            setTimeout(() => performLogin(username, password), 800);
+          } else {
+            showAlert(JSON.stringify(data), true);
+          }
+        } catch (err) {
+          showAlert('Network error: ' + err.message, true);
+        }
+      } else {
+        performLogin(username, password);
+      }
+    }
+
+    async function performLogin(username, password) {
+      try {
+        const res = await fetch('/api/login/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('task_jwt_access', data.access);
+          localStorage.setItem('task_jwt_refresh', data.refresh);
+          localStorage.setItem('task_user', username);
+          renderApp();
+        } else {
+          showAlert(data.detail || 'Invalid username or password', true);
+        }
+      } catch (err) {
+        showAlert('Network error: ' + err.message, true);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('task_jwt_access');
+      localStorage.removeItem('task_jwt_refresh');
+      localStorage.removeItem('task_user');
+      renderApp();
+    }
+
+    function getAuthHeaders() {
+      const token = localStorage.getItem('task_jwt_access');
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects/', { headers: getAuthHeaders() });
+        if (res.status === 401) return logout();
+        const data = await res.json();
+        projectsCache = data.results || [];
+        renderProjects(projectsCache);
+        populateProjectDropdowns(projectsCache);
+      } catch (err) {
+        console.error('Failed to load projects', err);
+      }
+    }
+
+    function renderProjects(projects) {
+      const container = document.getElementById('projectsList');
+      if (projects.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-3 text-center py-8 bg-slate-50 border border-dashed rounded-lg text-slate-500">
+            <i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-400"></i>
+            <p>No projects yet. Click "New Project" to create your first one!</p>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = projects.map(p => `
+        <div class="border border-slate-200 rounded-lg p-4 hover:border-indigo-300 transition duration-150 flex flex-col justify-between bg-slate-50">
+          <div>
+            <div class="flex justify-between items-start">
+              <h4 class="font-bold text-slate-800 text-base">${p.name}</h4>
+              <span class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                ${p.task_count} ${p.task_count === 1 ? 'task' : 'tasks'}
+              </span>
+            </div>
+            <p class="text-sm text-slate-600 mt-2 line-clamp-2">${p.description || 'No description provided.'}</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center text-xs text-slate-400">
+            <span>Owner: <strong>${p.owner}</strong></span>
+            <button onclick="deleteProject(${p.id})" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function populateProjectDropdowns(projects) {
+      const filterSelect = document.getElementById('filterProject');
+      const newSelect = document.getElementById('newTaskProject');
+      const opts = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      filterSelect.innerHTML = `<option value="">All Projects</option>` + opts;
+      newSelect.innerHTML = opts || `<option value="" disabled selected>No projects available</option>`;
+    }
+
+    async function loadTasks() {
+      const status = document.getElementById('filterStatus').value;
+      const priority = document.getElementById('filterPriority').value;
+      const project = document.getElementById('filterProject').value;
+      const search = document.getElementById('filterSearch').value.trim();
+
+      const params = new URLSearchParams();
+      if (status) params.append('status', status);
+      if (priority) params.append('priority', priority);
+      if (project) params.append('project', project);
+      if (search) params.append('search', search);
+
+      try {
+        const res = await fetch(`/api/tasks/?${params.toString()}`, { headers: getAuthHeaders() });
+        if (res.status === 401) return logout();
+        const data = await res.json();
+        renderTasks(data.results || []);
+      } catch (err) {
+        console.error('Failed to load tasks', err);
+      }
+    }
+
+    function debounceLoadTasks() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(loadTasks, 300);
+    }
+
+    function renderTasks(tasks) {
+      const container = document.getElementById('tasksList');
+      if (tasks.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-slate-50 border border-dashed rounded-lg text-slate-500">
+            <i class="fa-solid fa-clipboard-check text-3xl mb-2 text-slate-400"></i>
+            <p>No tasks found matching your filters.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const statusBadge = {
+        'todo': '<span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-medium">To Do</span>',
+        'in_progress': '<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-medium">In Progress</span>',
+        'done': '<span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-medium">Done</span>'
+      };
+
+      const priorityBadge = {
+        'high': '<span class="text-red-600 font-semibold text-xs"><i class="fa-solid fa-arrow-up"></i> High</span>',
+        'medium': '<span class="text-amber-600 font-semibold text-xs"><i class="fa-solid fa-minus"></i> Medium</span>',
+        'low': '<span class="text-slate-500 font-semibold text-xs"><i class="fa-solid fa-arrow-down"></i> Low</span>'
+      };
+
+      container.innerHTML = tasks.map(t => `
+        <div class="border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:shadow-sm bg-white">
+          <div class="flex-1">
+            <div class="flex items-center space-x-2">
+              <h4 class="font-bold text-slate-800 text-base">${t.title}</h4>
+              <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                ${t.project_name || 'Project #' + t.project}
+              </span>
+            </div>
+            <p class="text-sm text-slate-600 mt-1">${t.description || 'No description'}</p>
+          </div>
+          <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-end">
+            ${priorityBadge[t.priority] || ''}
+            ${statusBadge[t.status] || ''}
+            <button onclick="deleteTask(${t.id})" class="text-slate-400 hover:text-red-500 text-sm ml-2">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function handleCreateProject(e) {
+      e.preventDefault();
+      const name = document.getElementById('newProjectName').value.trim();
+      const description = document.getElementById('newProjectDesc').value.trim();
+      try {
+        const res = await fetch('/api/projects/', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ name, description })
+        });
+        if (res.ok) {
+          closeModal('projectModal');
+          document.getElementById('newProjectName').value = '';
+          document.getElementById('newProjectDesc').value = '';
+          await loadProjects();
+        } else {
+          alert('Error creating project');
+        }
+      } catch (err) {
+        alert('Failed: ' + err.message);
+      }
+    }
+
+    async function handleCreateTask(e) {
+      e.preventDefault();
+      const title = document.getElementById('newTaskTitle').value.trim();
+      const project = document.getElementById('newTaskProject').value;
+      const status = document.getElementById('newTaskStatus').value;
+      const priority = document.getElementById('newTaskPriority').value;
+      const description = document.getElementById('newTaskDesc').value.trim();
+
+      try {
+        const res = await fetch('/api/tasks/', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ title, project, status, priority, description })
+        });
+        if (res.ok) {
+          closeModal('taskModal');
+          document.getElementById('newTaskTitle').value = '';
+          document.getElementById('newTaskDesc').value = '';
+          await loadTasks();
+          await loadProjects(); // Updates task_count
+        } else {
+          const err = await res.json();
+          alert('Error: ' + JSON.stringify(err));
+        }
+      } catch (err) {
+        alert('Failed: ' + err.message);
+      }
+    }
+
+    async function deleteProject(id) {
+      if (!confirm('Are you sure you want to delete this project? All associated tasks will be removed!')) return;
+      await fetch(`/api/projects/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
+      await loadProjects();
+      await loadTasks();
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Delete this task?')) return;
+      await fetch(`/api/tasks/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
+      await loadTasks();
+      await loadProjects();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function renderApp() {
+      const token = localStorage.getItem('task_jwt_access');
+      const user = localStorage.getItem('task_user');
+      const authSection = document.getElementById('authSection');
+      const dashboardSection = document.getElementById('dashboardSection');
+      const authNav = document.getElementById('authNav');
+
+      if (token && user) {
+        authSection.classList.add('hidden');
+        dashboardSection.classList.remove('hidden');
+        authNav.innerHTML = `
+          <div class="flex items-center space-x-3 text-sm">
+            <span class="bg-indigo-700 px-3 py-1.5 rounded-full flex items-center space-x-1.5">
+              <i class="fa-solid fa-user-circle"></i>
+              <span>${user}</span>
+            </span>
+            <button onclick="logout()" class="text-indigo-200 hover:text-white transition duration-150">
+              <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Logout
+            </button>
+          </div>
+        `;
+        loadProjects();
+        loadTasks();
+      } else {
+        authSection.classList.remove('hidden');
+        dashboardSection.classList.add('hidden');
+        authNav.innerHTML = `<span class="text-sm text-indigo-200">Not logged in</span>`;
+      }
+    }
+
+    // Auto initialize on load
+    document.addEventListener('DOMContentLoaded', renderApp);
+  </script>
+</body>
+</html>

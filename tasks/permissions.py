@@ -21,3 +21,4 @@ class IsOwner(permissions.BasePermission):
             return obj.project.owner == request.user
 
         return False
+

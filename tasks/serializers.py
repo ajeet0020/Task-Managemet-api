@@ -69,3 +69,4 @@ class TaskSerializer(serializers.ModelSerializer):
                     "You cannot associate a task with a project you do not own."
                 )
         return value
+
